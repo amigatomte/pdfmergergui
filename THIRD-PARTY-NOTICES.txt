@@ -1,0 +1,3 @@
+This application includes qpdf, licensed under the Apache License 2.0.
+Copyright (c) Jay Berkenbilt and contributors.
+Full license text: https://www.apache.org/licenses/LICENSE-2.0

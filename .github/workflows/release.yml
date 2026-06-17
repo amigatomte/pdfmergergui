@@ -1,0 +1,73 @@
+name: Build And Release Binary
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+      - name: Publish single-file win-x64
+        run: >-
+          dotnet publish -c Release -r win-x64 --self-contained true
+          /p:PublishSingleFile=true
+          /p:IncludeNativeLibrariesForSelfExtract=true
+          /p:EnableCompressionInSingleFile=true
+
+      - name: Prepare release artifact
+        shell: pwsh
+        run: |
+          $publishDir = "bin/Release/net8.0-windows/win-x64/publish"
+          $stageDir = "release"
+          $zipPath = "PdfMergerGui-win-x64.zip"
+
+          Remove-Item -Recurse -Force $stageDir -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $stageDir | Out-Null
+
+          Copy-Item "$publishDir/PdfMergerGui.exe" "$stageDir/PdfMergerGui.exe"
+
+          if (Test-Path "$publishDir/settings.json") {
+            Copy-Item "$publishDir/settings.json" "$stageDir/settings.json"
+          }
+
+          if (Test-Path "$publishDir/PdfMergerGui.exe.config") {
+            Copy-Item "$publishDir/PdfMergerGui.exe.config" "$stageDir/PdfMergerGui.exe.config"
+          }
+
+          if (Test-Path "$publishDir/README.md") {
+            Copy-Item "$publishDir/README.md" "$stageDir/README.md"
+          }
+
+          if (Test-Path $zipPath) {
+            Remove-Item $zipPath -Force
+          }
+
+          Compress-Archive -Path "$stageDir/*" -DestinationPath $zipPath
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: PdfMergerGui-win-x64.zip
+          draft: false
+          prerelease: false

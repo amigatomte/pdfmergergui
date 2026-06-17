@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+
+# Logs
+logs/
+
+# User/IDE files
+.vs/
+*.user
+*.suo
+*.userprefs
+
+# Publish artifacts
+publish/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Optional local overrides
+*.local.json

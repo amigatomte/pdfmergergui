@@ -1,0 +1,9 @@
+{
+  "TempFolder": "%TEMP%\\PdfMergerGui",
+  "DefaultOutputFolder": "%USERPROFILE%\\Documents",
+  "EnableLogging": true,
+  "EnableFastMode": true,
+  "RetryWordWithFreshInstance": true,
+  "ForceLocalPrinterForWord": true,
+  "PreferredWordPrinter": "Microsoft Print to PDF"
+}

@@ -38,6 +38,9 @@
       The file is embedded into the assembly and extracted to %TEMP%\PdfMergerGui\ at runtime.
     -->
     <EmbeddedResource Include="qpdf.exe" />
+    <EmbeddedResource Include="qpdf*.dll" />
+    <EmbeddedResource Include="lib*.dll" />
+    <EmbeddedResource Include="qpdf\**\*.dll" />
 
     <!-- settings.json is user-editable; it lives next to the EXE (not embedded). -->
     <Content Include="settings.json">

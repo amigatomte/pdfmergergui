@@ -23,12 +23,6 @@ internal static class EmbeddedTools
         string targetDir = AppSettings.GetTempFolder();
         string targetPath = Path.Combine(targetDir, "qpdf.exe");
 
-        if (File.Exists(targetPath))
-        {
-            AppLogger.Log($"qpdf.exe already present at: {targetPath}");
-            return targetPath;
-        }
-
         Directory.CreateDirectory(targetDir);
 
         // Locate the embedded resource regardless of how MSBuild named it.
@@ -50,13 +44,44 @@ internal static class EmbeddedTools
                 $"Available embedded resources: [{available}]");
         }
 
-        AppLogger.Log($"Extracting embedded resource '{resourceName}' to: {targetPath}");
+        // Extract qpdf.exe (always overwrite to keep temp copy in sync with embedded version).
+        ExtractResourceToFile(assembly, resourceName, targetPath);
 
-        using Stream resourceStream = assembly.GetManifestResourceStream(resourceName)!;
-        using FileStream fileStream = new(targetPath, FileMode.Create, FileAccess.Write, FileShare.None);
-        resourceStream.CopyTo(fileStream);
+        // Also extract any embedded companion DLLs into the same directory.
+        string[] allResourceNames = assembly.GetManifestResourceNames();
+        string[] dllResources = allResourceNames
+            .Where(n => n.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
 
-        AppLogger.Log("qpdf.exe extracted successfully.");
+        foreach (string dllResource in dllResources)
+        {
+            string fileName = GetLikelyFileNameFromResource(dllResource);
+            if (string.IsNullOrWhiteSpace(fileName))
+                continue;
+
+            string destination = Path.Combine(targetDir, fileName);
+            ExtractResourceToFile(assembly, dllResource, destination);
+        }
+
+        AppLogger.Log("qpdf.exe and companion DLL extraction completed.");
         return targetPath;
+    }
+
+    private static void ExtractResourceToFile(Assembly assembly, string resourceName, string destinationPath)
+    {
+        AppLogger.Log($"Extracting embedded resource '{resourceName}' to: {destinationPath}");
+        using Stream resourceStream = assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"Resource stream not found: {resourceName}");
+        using FileStream fileStream = new(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
+        resourceStream.CopyTo(fileStream);
+    }
+
+    private static string GetLikelyFileNameFromResource(string resourceName)
+    {
+        // Manifest resource names are dot-separated. We reconstruct the likely file name
+        // by using the final two segments (basename + extension), e.g. "libfoo.dll".
+        string[] parts = resourceName.Split('.');
+        if (parts.Length < 2) return string.Empty;
+        return $"{parts[^2]}.{parts[^1]}";
     }
 }
